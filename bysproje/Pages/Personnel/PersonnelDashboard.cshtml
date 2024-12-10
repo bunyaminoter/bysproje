@@ -1,0 +1,179 @@
+﻿@page
+@model bysproje.Pages.Personnel.PersonnelDashboardModel
+@{
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Personel Dashboard</title>
+        <link rel="stylesheet" href="/css/PersonnelDashboard.css"> <!-- CSS Bağlantısı -->
+    </head>
+    <body>
+        <div class="sidebar">
+            <!-- Logo -->
+            <div class="logo-container">
+                <img src="/img/ktu-logo.png" alt="Logo" class="logo"> <!-- Logo dosyasının yolu -->
+            </div>
+
+            <!-- Personelin Adı -->
+            <div class="personnel-info">
+                <p class="personnel-name">@Model.PersonnelName</p> <!-- Personel adını burada gösteriyoruz -->
+            </div>
+
+            <!-- Menü Başlangıcı -->
+            <div id="menu">
+                <span class="menu-item" onclick="toggleSubMenu('studentMenu')">Öğrenci İşlemleri</span>
+                <div id="studentMenu" class="sub-menu">
+                    <span onclick="showStudentForm()">Öğrenci Ekle</span> <!-- Öğrenci ekleme formunu göstermek için -->
+                    <span onclick="showStudentList()">Öğrencileri Listele</span> <!-- Öğrenci listeleme işlemi -->
+                </div>
+
+                <span class="menu-item" onclick="toggleSubMenu('courseMenu')">Ders İşlemleri</span>
+                <div id="courseMenu" class="sub-menu">
+                    <span><a href="/Course/Add">Ders Ekle</a></span>
+                    <span><a href="/Course/Delete">Ders Sil</a></span>
+                    <span><a href="/Course/Update">Ders Güncelle</a></span>
+                </div>
+
+                <span class="menu-item" onclick="toggleSubMenu('personnelMenu')">Personel Bilgileri</span>
+                <div id="personnelMenu" class="sub-menu">
+                    <span><a href="/Personnel/UpdateName">Adını Güncelle</a></span>
+                    <span><a href="/Personnel/UpdateEmail">E-Postayı Güncelle</a></span>
+                </div>
+            </div>
+            <!-- Menü Sonu -->
+        </div>
+
+        <!-- Ana Sayfa Üzerinde Öğrenci Ekleme Formu -->
+        <div class="main-content">
+            <!-- Öğrenci Ekleme Formu -->
+            <div id="studentFormContainer" style="display:none;">
+                <h2>Öğrenci Ekle</h2>
+                <form id="addStudentForm" onsubmit="submitStudentForm(event)">
+                    <div>
+                        <label for="firstName">Ad:</label>
+                        <input type="text" id="firstName" name="firstName" required>
+                    </div>
+                    <div>
+                        <label for="lastName">Soyad:</label>
+                        <input type="text" id="lastName" name="lastName" required>
+                    </div>
+                    <div>
+                        <label for="email">E-Posta:</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <div>
+                        <label for="advisorId">Danışman ID:</label>
+                        <input type="number" id="advisorId" name="advisorId" required>
+                    </div>
+                    <button type="submit">Ekle</button>
+                </form>
+                <p id="responseMessage" style="color: green; display: none;">Öğrenci başarıyla eklendi.</p>
+            </div>
+
+
+            <!-- Öğrencileri Listeleme -->
+            <div id="studentsListContainer" style="display:none;">
+                <h2>Öğrenci Listesi</h2>
+                @if (Model.StudentsList != null && Model.StudentsList.Count > 0)
+                {
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Ad</th>
+                                <th>Soyad</th>
+                                <th>E-Posta</th>
+                                <th>Danışman ID</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var student in Model.StudentsList)
+                            {
+                                <tr>
+                                    <td>@student.StudentID</td>
+                                    <td>@student.FirstName</td>
+                                    <td>@student.LastName</td>
+                                    <td>@student.Email</td>
+                                    <td>@student.AdvisorID</td>
+                                    <td>
+                                        <a href="/Personnel/EditStudent/@student.StudentID" class="action-button btn-edit">Güncelle</a>
+                                        <form method="post" asp-page-handler="Delete" style="display:inline;">
+                                            <input type="hidden" name="id" value="@student.StudentID" />
+                                            <button type="submit" class="action-button delete-button">Sil</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p>Öğrenci listesi boş.</p>
+                }
+            </div>
+        </div>
+
+        <script>
+            function showStudentForm() {
+                document.getElementById('studentFormContainer').style.display = 'block';
+                document.getElementById('studentsListContainer').style.display = 'none';
+            }
+
+            function showStudentList() {
+                document.getElementById('studentFormContainer').style.display = 'none';
+                document.getElementById('studentsListContainer').style.display = 'block';
+            }
+        </script>
+
+        <script>
+            async function submitStudentForm(event) {
+                event.preventDefault(); // Sayfanın yenilenmesini engelle
+
+                // Form verilerini oku
+                const firstName = document.getElementById('firstName').value;
+                const lastName = document.getElementById('lastName').value;
+                const email = document.getElementById('email').value;
+                const advisorId = document.getElementById('advisorId').value;
+
+                // API'ye gönderilecek JSON
+                const studentData = {
+                    FirstName: firstName,
+                    LastName: lastName,
+                    Email: email,
+                    AdvisorID: parseInt(advisorId)
+                };
+
+                try {
+                    // API'ye POST isteği gönder
+                    const response = await fetch('/api/Student', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(studentData)
+                    });
+
+                    if (response.ok) {
+                        document.getElementById('responseMessage').style.display = 'block';
+                        document.getElementById('responseMessage').innerText = 'Öğrenci başarıyla eklendi!';
+                    } else {
+                        const errorData = await response.json();
+                        alert('Hata: ' + (errorData.message || 'Öğrenci eklenemedi.'));
+                    }
+                } catch (error) {
+                    console.error('Hata:', error);
+                    alert('Bir hata oluştu. Lütfen tekrar deneyin.');
+                }
+            }
+        </script>
+
+
+        <script src="/js/PersonnelDashboard.js"></script> <!-- JS Bağlantısı -->
+    </body>
+    </html>
+}
